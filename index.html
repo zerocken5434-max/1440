@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="1440">
+    <meta name="theme-color" content="#1a1a2e">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <title>1440 - 今日の残り時間</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+            color: #fff;
+            padding: 20px;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .container {
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .title {
+            font-size: 1rem;
+            color: #8892b0;
+            margin-bottom: 15px;
+            letter-spacing: 0.3em;
+            font-weight: 500;
+        }
+
+        .fraction-display {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 8px;
+        }
+
+        .remaining {
+            font-size: clamp(4rem, 18vw, 8rem);
+            font-weight: 200;
+            letter-spacing: -0.02em;
+            line-height: 1;
+            background: linear-gradient(180deg, #64ffda 0%, #00bcd4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .separator {
+            font-size: clamp(2.5rem, 10vw, 5rem);
+            font-weight: 100;
+            color: #5a6a8a;
+            margin: 0 5px;
+        }
+
+        .total {
+            font-size: clamp(2rem, 8vw, 4rem);
+            font-weight: 200;
+            color: #8892b0;
+        }
+
+        .unit {
+            font-size: 1rem;
+            color: #5a6a8a;
+            margin-bottom: 35px;
+            letter-spacing: 0.2em;
+        }
+
+        .progress-container {
+            width: 100%;
+            margin-bottom: 25px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #64ffda 0%, #00bcd4 50%, #e94560 100%);
+            border-radius: 5px;
+            transition: width 1s linear;
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: #8892b0;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 300;
+            color: #64ffda;
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+            color: #8892b0;
+            letter-spacing: 0.1em;
+            margin-top: 4px;
+        }
+
+        .time-display {
+            margin-top: 35px;
+            font-size: 0.85rem;
+            color: #5a6a8a;
+        }
+
+        .message {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #8892b0;
+            font-style: italic;
+            min-height: 1.5em;
+            padding: 0 10px;
+        }
+
+        /* インストールバナー */
+        .install-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(100, 255, 218, 0.15);
+            border: 1px solid #64ffda;
+            border-radius: 12px;
+            padding: 15px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .install-banner.show {
+            display: flex;
+        }
+
+        .install-text {
+            font-size: 0.85rem;
+            color: #fff;
+        }
+
+        .install-btn {
+            background: #64ffda;
+            color: #1a1a2e;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .install-close {
+            background: none;
+            border: none;
+            color: #8892b0;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">TODAY'S REMAINING</div>
+        
+        <div class="fraction-display">
+            <span class="remaining" id="minutes">1440</span>
+            <span class="separator">/</span>
+            <span class="total">1440</span>
+        </div>
+        <div class="unit">MINUTES</div>
+
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="progress-labels">
+                <span>0:00</span>
+                <span>12:00</span>
+                <span>24:00</span>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="hoursLeft">24</div>
+                <div class="stat-label">HOURS</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="percentLeft">100</div>
+                <div class="stat-label">% LEFT</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="usedMinutes">0</div>
+                <div class="stat-label">USED</div>
+            </div>
+        </div>
+
+        <div class="time-display" id="currentTime"></div>
+        <div class="message" id="message"></div>
+    </div>
+
+    <!-- インストールバナー -->
+    <div class="install-banner" id="installBanner">
+        <span class="install-text">ホーム画面に追加できます</span>
+        <button class="install-btn" id="installBtn">追加</button>
+        <button class="install-close" id="installClose">×</button>
+    </div>
+
+    <script>
+        // Service Worker登録
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('SW registered'))
+                .catch(err => console.log('SW registration failed:', err));
+        }
+
+        // PWAインストールプロンプト
+        let deferredPrompt;
+        const installBanner = document.getElementById('installBanner');
+        const installBtn = document.getElementById('installBtn');
+        const installClose = document.getElementById('installClose');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBanner.classList.add('show');
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                installBanner.classList.remove('show');
+            }
+        });
+
+        installClose.addEventListener('click', () => {
+            installBanner.classList.remove('show');
+        });
+
+        // タイマー機能
+        function updateTimer() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+
+            const elapsedMinutes = hours * 60 + minutes + seconds / 60;
+            const remainingMinutes = Math.ceil(1440 - elapsedMinutes);
+            const remainingHours = Math.floor(remainingMinutes / 60);
+            const elapsedPercent = (elapsedMinutes / 1440) * 100;
+            const remainingPercent = Math.round(100 - elapsedPercent);
+            const usedMinutes = Math.floor(elapsedMinutes);
+
+            document.getElementById('minutes').textContent = remainingMinutes;
+            document.getElementById('hoursLeft').textContent = remainingHours;
+            document.getElementById('percentLeft').textContent = remainingPercent;
+            document.getElementById('usedMinutes').textContent = usedMinutes;
+            document.getElementById('progressFill').style.width = elapsedPercent + '%';
+            
+            const timeStr = now.toLocaleTimeString('ja-JP', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('currentTime').textContent = timeStr;
+
+            updateMessage(remainingMinutes, hours);
+        }
+
+        function updateMessage(remaining, hour) {
+            const messageEl = document.getElementById('message');
+            let message = '';
+
+            if (remaining <= 60) {
+                message = '今日もお疲れさま。明日に備えて休もう。';
+            } else if (remaining <= 180) {
+                message = '1日の終わりが近づいている。';
+            } else if (remaining <= 360) {
+                message = '夜の時間、何に使う？';
+            } else if (remaining <= 720) {
+                message = '午後の時間を大切に。';
+            } else if (remaining <= 1080) {
+                message = '1日の折り返し地点。';
+            } else if (remaining <= 1380) {
+                message = '朝の時間は貴重。';
+            } else {
+                message = '新しい1日が始まった。';
+            }
+
+            messageEl.textContent = message;
+        }
+
+        updateTimer();
+        setInterval(updateTimer, 1000);
+    </script>
+</body>
+</html>

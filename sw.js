@@ -1,4 +1,4 @@
-const CACHE_NAME = '1440-timer-v4';
+const CACHE_NAME = '1440-timer-v5';
 const urlsToCache = [
   './',
   './index.html',
@@ -32,15 +32,19 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// フェッチ時にキャッシュから返す
+// ネットワーク優先：オンライン時は最新を取得、オフライン時はキャッシュを使用
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseClone);
+        });
+        return response;
+      })
+      .catch(() => {
+        return caches.match(event.request);
       })
   );
 });

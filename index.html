@@ -156,6 +156,141 @@
             font-style: italic;
             min-height: 1.5em;
             padding: 0 10px;
+            transition: opacity 0.6s ease;
+            opacity: 1;
+        }
+
+        .message.fade-out {
+            opacity: 0;
+        }
+
+        .quote-actions {
+            margin-top: 10px;
+        }
+
+        .quote-add-btn {
+            background: none;
+            border: 1px solid #5a6a8a;
+            color: #5a6a8a;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quote-add-btn:hover {
+            border-color: #64ffda;
+            color: #64ffda;
+        }
+
+        .quote-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .quote-modal.show {
+            display: flex;
+        }
+
+        .quote-modal-content {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 25px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .quote-modal-title {
+            font-size: 1rem;
+            margin-bottom: 15px;
+            color: #64ffda;
+        }
+
+        .quote-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #5a6a8a;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+
+        .quote-input::placeholder {
+            color: #5a6a8a;
+        }
+
+        .quote-save-btn {
+            background: #64ffda;
+            color: #1a1a2e;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .quote-cancel-btn {
+            background: none;
+            border: 1px solid #5a6a8a;
+            color: #8892b0;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .custom-quotes-list {
+            margin-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+        }
+
+        .custom-quotes-label {
+            font-size: 0.8rem;
+            color: #5a6a8a;
+            margin-bottom: 8px;
+        }
+
+        .custom-quote-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.8rem;
+            color: #8892b0;
+        }
+
+        .custom-quote-item span {
+            flex: 1;
+            margin-right: 10px;
+        }
+
+        .custom-quote-delete {
+            background: none;
+            border: none;
+            color: #e94560;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 2px 6px;
         }
 
         /* インストールバナー */
@@ -245,6 +380,23 @@
 
         <div class="time-display" id="currentTime"></div>
         <div class="message" id="message"></div>
+        <div class="quote-actions">
+            <button class="quote-add-btn" id="quoteAddBtn" title="名言を追加">+</button>
+        </div>
+    </div>
+
+    <!-- 名言追加モーダル -->
+    <div class="quote-modal" id="quoteModal">
+        <div class="quote-modal-content">
+            <div class="quote-modal-title">名言を追加</div>
+            <input class="quote-input" id="quoteText" type="text" placeholder="名言を入力...">
+            <input class="quote-input" id="quoteAuthor" type="text" placeholder="人物名を入力...">
+            <div>
+                <button class="quote-save-btn" id="quoteSaveBtn">保存</button>
+                <button class="quote-cancel-btn" id="quoteCancelBtn">閉じる</button>
+            </div>
+            <div class="custom-quotes-list" id="customQuotesList"></div>
+        </div>
     </div>
 
     <!-- インストールバナー -->
@@ -317,42 +469,140 @@
             updateMessage(remainingMinutes, hours);
         }
 
+        // デフォルトの名言リスト
+        const defaultQuotes = [
+            '「我思う、ゆえに我あり」― デカルト',
+            '「万物は流転する」― ヘラクレイトス',
+            '「汝自身を知れ」― ソクラテス',
+            '「人間は考える葦である」― パスカル',
+            '「知は力なり」― フランシス・ベーコン',
+            '「朝に道を聞かば夕べに死すとも可なり」― 孔子',
+            '「今日という日は残りの人生の最初の日である」― チャールズ・ディードリッヒ',
+            '「千里の道も一歩から」― 老子',
+            '「今日できることを明日に延ばすな」― ベンジャミン・フランクリン',
+            '「天才とは1%のひらめきと99%の努力である」― エジソン',
+            '「為せば成る、為さねば成らぬ何事も」― 上杉鷹山',
+            '「想像力は知識よりも重要だ」― アインシュタイン',
+            '「人生は自転車に乗るようなものだ。倒れないためには走り続けなければならない」― アインシュタイン',
+            '「困難の中に機会がある」― アインシュタイン',
+            '「時間だけが我々に与えられた唯一の財産である」― セネカ',
+            '「初心忘るべからず」― 世阿弥',
+            '「明日死ぬかのように生きよ、永遠に生きるかのように学べ」― ガンジー',
+            '「未来とは今日始めるものである」― マルコム・X',
+            '「賢者は歴史に学び、愚者は経験に学ぶ」― ビスマルク',
+            '「成功とは意欲を失わずに失敗から失敗へと進むことである」― チャーチル',
+            '「少年よ、大志を抱け」― クラーク博士'
+        ];
+
+        // カスタム名言の読み込み・保存
+        function getCustomQuotes() {
+            try {
+                return JSON.parse(localStorage.getItem('customQuotes') || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveCustomQuotes(quotes) {
+            localStorage.setItem('customQuotes', JSON.stringify(quotes));
+        }
+
+        // 日付+時間からランダムな名言を選ぶ（同じ日・同じ時間なら同じ名言）
+        function getSeededIndex(hour, totalQuotes) {
+            const today = new Date();
+            const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+            const hash = ((seed * 2654435761 + hour * 40503) >>> 0) % totalQuotes;
+            return hash;
+        }
+
+        // フェードアニメーション付きメッセージ更新
+        let currentMessage = '';
+
         function updateMessage(remaining, hour) {
             const messageEl = document.getElementById('message');
             let message = '';
 
             if (remaining <= 180) {
-                // 21時以降（就寝時間）
                 message = '「眠りは最良の瞑想である」― ダライ・ラマ';
             } else {
-                // 1時間ごとに名言を切り替え
-                const quotes = [
-                    '「我思う、ゆえに我あり」― デカルト',
-                    '「万物は流転する」― ヘラクレイトス',
-                    '「汝自身を知れ」― ソクラテス',
-                    '「人間は考える葦である」― パスカル',
-                    '「知は力なり」― フランシス・ベーコン',
-                    '「朝に道を聞かば夕べに死すとも可なり」― 孔子',
-                    '「今日という日は残りの人生の最初の日である」― チャールズ・ディードリッヒ',
-                    '「千里の道も一歩から」― 老子',
-                    '「今日できることを明日に延ばすな」― ベンジャミン・フランクリン',
-                    '「天才とは1%のひらめきと99%の努力である」― エジソン',
-                    '「為せば成る、為さねば成らぬ何事も」― 上杉鷹山',
-                    '「想像力は知識よりも重要だ」― アインシュタイン',
-                    '「人生は自転車に乗るようなものだ。倒れないためには走り続けなければならない」― アインシュタイン',
-                    '「困難の中に機会がある」― アインシュタイン',
-                    '「時間だけが我々に与えられた唯一の財産である」― セネカ',
-                    '「初心忘るべからず」― 世阿弥',
-                    '「明日死ぬかのように生きよ、永遠に生きるかのように学べ」― ガンジー',
-                    '「未来とは今日始めるものである」― マルコム・X',
-                    '「賢者は歴史に学び、愚者は経験に学ぶ」― ビスマルク',
-                    '「成功とは意欲を失わずに失敗から失敗へと進むことである」― チャーチル',
-                    '「少年よ、大志を抱け」― クラーク博士'
-                ];
-                message = quotes[hour] || quotes[0];
+                const allQuotes = defaultQuotes.concat(getCustomQuotes());
+                const index = getSeededIndex(hour, allQuotes.length);
+                message = allQuotes[index];
             }
 
-            messageEl.textContent = message;
+            if (message !== currentMessage) {
+                messageEl.classList.add('fade-out');
+                setTimeout(() => {
+                    messageEl.textContent = message;
+                    messageEl.classList.remove('fade-out');
+                    currentMessage = message;
+                }, 600);
+            }
+        }
+
+        // 名言追加モーダル
+        const quoteModal = document.getElementById('quoteModal');
+        const quoteAddBtn = document.getElementById('quoteAddBtn');
+        const quoteSaveBtn = document.getElementById('quoteSaveBtn');
+        const quoteCancelBtn = document.getElementById('quoteCancelBtn');
+
+        quoteAddBtn.addEventListener('click', () => {
+            quoteModal.classList.add('show');
+            renderCustomQuotes();
+        });
+
+        quoteCancelBtn.addEventListener('click', () => {
+            quoteModal.classList.remove('show');
+        });
+
+        quoteModal.addEventListener('click', (e) => {
+            if (e.target === quoteModal) {
+                quoteModal.classList.remove('show');
+            }
+        });
+
+        quoteSaveBtn.addEventListener('click', () => {
+            const text = document.getElementById('quoteText').value.trim();
+            const author = document.getElementById('quoteAuthor').value.trim();
+            if (!text) return;
+
+            const customs = getCustomQuotes();
+            const formatted = author ? '「' + text + '」― ' + author : '「' + text + '」';
+            customs.push(formatted);
+            saveCustomQuotes(customs);
+
+            document.getElementById('quoteText').value = '';
+            document.getElementById('quoteAuthor').value = '';
+            renderCustomQuotes();
+        });
+
+        function renderCustomQuotes() {
+            const list = document.getElementById('customQuotesList');
+            const customs = getCustomQuotes();
+
+            if (customs.length === 0) {
+                list.innerHTML = '';
+                return;
+            }
+
+            let html = '<div class="custom-quotes-label">追加した名言</div>';
+            customs.forEach((q, i) => {
+                html += '<div class="custom-quote-item">'
+                    + '<span>' + q + '</span>'
+                    + '<button class="custom-quote-delete" data-index="' + i + '">×</button>'
+                    + '</div>';
+            });
+            list.innerHTML = html;
+
+            list.querySelectorAll('.custom-quote-delete').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.index);
+                    const quotes = getCustomQuotes();
+                    quotes.splice(idx, 1);
+                    saveCustomQuotes(quotes);
+                    renderCustomQuotes();
+                });
+            });
         }
 
         updateTimer();
